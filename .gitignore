@@ -1,0 +1,50 @@
+# Compiled Python code
+*.py[cod]
+*.so
+
+# Packages
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+bin
+var
+sdist
+develop-eggs
+test
+MANIFEST
+.installed.cfg
+
+# Installer logs
+pip-log.txt
+
+# Unit test / coverage reports
+.coverage
+.tox
+cover/
+htmlcov/
+
+# Translations
+*.mo
+
+# Mr Developer
+.mr.developer.cfg
+
+# log files
+*.log
+*.json
+
+# vim swap files
+*.sw*
+
+# PyCharm IDE directory
+.idea
+
+# virtualenv
+venv
+
+# data files
+*.xml
+*.json
