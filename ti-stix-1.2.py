@@ -24,8 +24,8 @@ from stix.core import STIXHeader
 from stix.core import STIXPackage
 from stix.indicator import Indicator
 from stix.ttp import TTP
-from stix.ttp import MalwareInstance
 from stix.ttp.behavior import Behavior
+from stix.ttp.malware_instance import MalwareInstance
 
 
 def add_malware(hashVal, TTPTitle, malware_uuid):
@@ -50,15 +50,15 @@ def add_malware(hashVal, TTPTitle, malware_uuid):
 
 def main():
     # define constants
-    TI_REQUEST_URL = "https://api.intelgraph.verisign.com/rest/threatindicator/v0"
+    TI_REQUEST_URL = "https://api.intelgraph.idefense.com/rest/threatindicator/v0"
     # iDefense API Key
     # To avoid hard-coding creds, I'm using environment variables
 
-    if os.environ.get('API_KEY') is None:
-        print "error: please store your iDefense IntelGraph API key in the API_KEY environment variable"
+    if os.environ.get('IDEF_TOKEN') is None:
+        print "error: please store your iDefense IntelGraph API key in the IDEF_TOKEN environment variable"
         sys.exit(1)
 
-    API_KEY = os.environ.get('API_KEY')
+    API_KEY = os.environ.get('IDEF_TOKEN')
     API_SECRET = ''
 
     # Insert the start date from when you want to retrive the TI data from.
@@ -81,13 +81,13 @@ def main():
     count = 0
 
     # Set namespace
-    NAMESPACE = Namespace("https://intelgraph.verisign.com", "idefense")
+    NAMESPACE = Namespace("https://intelgraph.idefense.com", "idefense")
     set_id_namespace(NAMESPACE)
 
     # Create STIX Package
     stix_package = STIXPackage()
     stix_header = STIXHeader()
-    stix_header.description = "Verisign iDefense Threat Indicators Feed"
+    stix_header.description = "iDefense Threat Indicators Feed"
     stix_package.stix_header = stix_header
 
     ttps = {}
