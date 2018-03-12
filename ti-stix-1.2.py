@@ -12,21 +12,22 @@ import sys
 from itertools import islice
 
 import requests
-from cybox.object.http_session_object import HTTPClientRequest
-from cybox.object.http_session_object import HTTPRequestHeader
-from cybox.object.http_session_object import HTTPRequestHeaderFields
-from cybox.object.http_session_object import HTTPRequestResponse
-from cybox.object.http_session_object import HTTPSession
 from cybox.objects.address_object import Address
 from cybox.objects.domain_name_object import DomainName
+from cybox.objects.http_session_object import HTTPClientRequest
+from cybox.objects.http_session_object import HTTPRequestHeader
+from cybox.objects.http_session_object import HTTPRequestHeaderFields
+from cybox.objects.http_session_object import HTTPRequestResponse
+from cybox.objects.http_session_object import HTTPSession
 from cybox.objects.uri_object import URI
+from mixbox.idgen import set_id_namespace
+from mixbox.namespaces import Namespace
 from stix.common import Confidence
 from stix.common.vocabs import VocabString
 from stix.core import STIXHeader
 from stix.core import STIXPackage
 from stix.indicator import Indicator
 from stix.ttp import TTP
-from stix.utils import set_id_namespace
 
 
 def main():
@@ -143,7 +144,7 @@ def main():
     # sample-sha256 = SHA256 hash of malware sample [11]
 
     # Set namespace
-    NAMESPACE = {"http://idefense.com": "idefense"}
+    NAMESPACE = Namespace("http://idefense.com", "idefense")
     set_id_namespace(NAMESPACE)
 
     # Create STIX Package
