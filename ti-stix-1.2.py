@@ -61,11 +61,11 @@ def main():
     API_KEY = os.environ.get('IDEF_TOKEN')
     API_SECRET = ''
 
-    # Insert the start date from when you want to retrive the TI data from.
-
+    # TODO: use command-line parameter
     timestr = datetime.datetime.utcnow() - datetime.timedelta(days=1)
     LAST_IMPORT = timestr.strftime("%Y-%m-%dT%H:%M:%S") + ".000Z"
 
+    # TODO: use context manager
     file = open('stix-1.2.1.xml', 'w')
 
     HEADERS = {
