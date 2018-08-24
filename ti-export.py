@@ -189,9 +189,7 @@ def main():
             csv_w.writerows(feed)
     elif config.format == 'json':
         with open(config.out_f, 'wb') as f:
-            for indicator in feed:
-                f.write(json.dumps(indicator) + '\n')
-
+            json.dump(feed, f, indent=2)
 
 if __name__ == "__main__":
     main()
