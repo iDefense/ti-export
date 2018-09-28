@@ -81,8 +81,9 @@ for indicator in indicators:
     else:
         ioc['expiration'] = 90
 
-    ts_ioc = feed.Indicator(ioc['value'], confidence=ioc['confidence'], severity=ioc['severity'], threat_type=ioc['threat_type'],
-                            itype=ioc['itype'], tags=ioc['tags'], expiration=ioc['expiration'])
+    ts_ioc = feed.Indicator(ioc['value'], confidence=ioc['confidence'], severity=ioc['severity'],
+                            threat_type=ioc['threat_type'], itype=ioc['itype'], tags=ioc['tags'],
+                            expiration=ioc['expiration'])
     iocs.append(ts_ioc)
 
 feed.ingest_indicators(iocs)
