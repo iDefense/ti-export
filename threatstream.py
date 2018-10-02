@@ -3,8 +3,13 @@ import json
 import os
 import sys
 
-import anomali_sdk.feeds as feed
+import anomali_feedsdk.feed as feed
 import requests
+
+
+DEBUG = True
+
+sev_map = {1: "low", 2: "low", 3: "medium", 4: "high", 5: "very-high"}
 
 # get all the data since DELTA days ago, this can be changed in the next line
 DELTA = 1
@@ -23,6 +28,8 @@ indicators = []
 while more:
     request_payload = {"start_date": last_import, "page_size": 200, "page": page}
     try:
+        if DEBUG:
+            sys.stderr.write("Requesting %s page %d starting from %s\n" % (url, page, last_import))
         r = requests.post(url, headers=headers, data=json.dumps(request_payload))
     except requests.exceptions.ConnectionError as e:
         sys.exit("Check your network connection\n%s" % str(e))
@@ -32,7 +39,7 @@ while more:
     try:
         response = r.json()
     except (ValueError, KeyError) as e:
-        sys.exit("Response couldn't be decoded")
+        sys.exit("Response couldn't be decoded\n")
 
     if r.status_code != requests.codes.ok:
         sys.stderr.write('%s @ %s\n' % (response['message'], response['timestamp']))
@@ -43,7 +50,7 @@ while more:
     page += 1
 
     if 'results' not in response:
-        sys.exit("No results for request")
+        sys.exit("No results for request\n")
 
     for indicator in response['results']:
         indicators.append(indicator)
@@ -54,19 +61,23 @@ for indicator in indicators:
     # ioc is a placeholder to build up the map
     ioc = {}
     ioc['value'] = indicator['key']
+    if DEBUG:
+        sys.stderr.write("Processing indicator %s\n" % indicator['key'])
+
     # use a default of 50 because of a bug in iDefense TI
     ioc['confidence'] = indicator.get('confidence', 50)
-    ioc['severity'] = indicator['severity']
+    ioc['severity'] = sev_map[indicator['severity']]
 
     if "Cyber Espionage" in indicator['threat_types']:
         ioc['threat_type'] = "apt"
+        # examples: "apt_ip", "c2_url"
+        ioc['itype'] = "apt_" + indicator['type']
     elif "MALWARE_C2" in indicator['last_seen_as']:
         ioc['threat_type'] = "c2"
+        ioc['itype'] = "c2_" + indicator['type']
     else:  # generally MALWARE_DOWNLOAD
         ioc['threat_type'] = "malware"
-
-    # examples: "apt_ip", "c2_url"
-    ioc['itype'] = ioc['threat_type'] + "_" + indicator['type']
+        ioc['itype'] = "mal_" + indicator['type']
 
     # every malware family and threat campaign should be a tag for the indicator
     ioc['tags'] = []
