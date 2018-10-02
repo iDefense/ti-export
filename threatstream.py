@@ -56,7 +56,7 @@ while more:
         indicators.append(indicator)
 
 # map our data to the ThreatStream data model and build the list
-iocs = []
+ts_iocs = []
 for indicator in indicators:
     # ioc is a placeholder to build up the map
     ioc = {}
@@ -95,6 +95,7 @@ for indicator in indicators:
     ts_ioc = feed.Indicator(ioc['value'], confidence=ioc['confidence'], severity=ioc['severity'],
                             threat_type=ioc['threat_type'], itype=ioc['itype'], tags=ioc['tags'],
                             expiration=ioc['expiration'])
-    iocs.append(ts_ioc)
+    ts_iocs.append(ts_ioc)
 
-feed.ingest_indicators(iocs)
+ts_feed = feed.Feed()
+ts_feed.ingest_indicators(ts_iocs)
