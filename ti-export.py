@@ -91,7 +91,7 @@ class Config(object):
         if not self.token:
             sys.exit('Must specify API token in config file or environment variable')
 
-        self.format = self.configp.get('ti', 'format')
+        self.format = args.format or self.configp.get('ti', 'format')
         self.out_f = args.output or self.configp.get('ti', 'filename')
         self.confidence = args.confidence or self.configp.get('ti', 'confidence')
         self.severity = args.severity or self.configp.get('ti', 'severity')
@@ -189,9 +189,7 @@ def main():
             csv_w.writerows(feed)
     elif config.format == 'json':
         with open(config.out_f, 'wb') as f:
-            for indicator in feed:
-                f.write(json.dumps(indicator) + '\n')
-
+            json.dump(feed, f, indent=2)
 
 if __name__ == "__main__":
     main()
