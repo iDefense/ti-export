@@ -98,4 +98,8 @@ for indicator in indicators:
     ts_iocs.append(ts_ioc)
 
 ts_feed = feed.Feed()
+
+# Relies on environment variables for authentication
+# Specifically: TS_API_URL, TS_USERNAME, TS_API_KEY, TS_FEED_ID, TS_FEED_NAME
+
 ts_feed.ingest_indicators(ts_iocs)
