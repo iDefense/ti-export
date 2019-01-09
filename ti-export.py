@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
-import ConfigParser
+import configparser
 import csv
 import datetime
 import json
@@ -83,7 +83,7 @@ class Config(object):
     def __init__(self, args, filename='ti.cfg'):
         super(Config, self).__init__()
 
-        self.configp = ConfigParser.SafeConfigParser()
+        self.configp = configparser.SafeConfigParser()
         self.configp.read(filename)
 
         # Initial basics
@@ -145,8 +145,8 @@ def main():
             request_payload['type'] = {'values': config.types}
 
         if config.debug:
-            print "Requesting:"
-            print json.dumps(request_payload)
+            print("Requesting:")
+            print(json.dumps(request_payload))
 
         # Fetch next page of data
         try:
@@ -164,7 +164,7 @@ def main():
                 sys.exit("Response couldn't be decoded")
 
             more_data = response['more']
-            print "Page %d ==> %s (%s)" % (page, response['more'], response['total_size'])
+            print("Page %d ==> %s (%s)" % (page, response['more'], response['total_size']))
             page += 1
 
             if 'results' not in response:
@@ -173,7 +173,7 @@ def main():
             # Iterate the response
             for indicator in response['results']:
                 if config.debug:
-                    print "Processing " + indicator['key']
+                    print("Processing " + indicator['key'])
 
                 feed.append(build_row(indicator))
 
@@ -188,7 +188,7 @@ def main():
             csv_w.writeheader()
             csv_w.writerows(feed)
     elif config.format == 'json':
-        with open(config.out_f, 'wb') as f:
+        with open(config.out_f, 'w', encoding='utf-8') as f:
             json.dump(feed, f, indent=2)
 
 if __name__ == "__main__":
