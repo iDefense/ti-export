@@ -51,9 +51,9 @@ def addIndicator(indicator):
         for i in fields:
             data = {'name': table_name, 'outer_key': indicator['value'], 'inner_key': i['name'], 'value': i['value'], 'source': 'iDefense IntelGraph'}
             response = requests.post(table_url, headers=headers, data=data, verify=False)
-        print('Indicator ' + str(indicator['value']) + ' insertion HTTP status: ' + str(response.status_code))
+        print(('Indicator ' + str(indicator['value']) + ' insertion HTTP status: ' + str(response.status_code)))
     except requests.exceptions.RequestException as exception:
-        print(str(exception) + ', exiting.\n')
+        print((str(exception) + ', exiting.\n'))
 
 
 def main():
