@@ -197,5 +197,6 @@ def main():
         with open(config.out_f, 'w') as f:
             json.dump(feed, f, indent=2)
 
+
 if __name__ == "__main__":
     main()
