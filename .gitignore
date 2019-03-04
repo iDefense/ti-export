@@ -48,3 +48,5 @@ venv
 # data files
 *.xml
 *.json
+*.csv
+*.rc

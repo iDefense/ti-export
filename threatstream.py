@@ -38,7 +38,7 @@ while more:
 
     try:
         response = r.json()
-    except (ValueError, KeyError) as e:
+    except (ValueError, KeyError):
         sys.exit("Response couldn't be decoded\n")
 
     if r.status_code != requests.codes.ok:
