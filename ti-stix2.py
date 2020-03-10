@@ -39,6 +39,61 @@ def confidence_map(con_quant):
         return ""
 
 
+def fetch_indicators(config):
+    # Set the datetime of the last import
+    page = 1
+    more_data = True
+    results = []
+    while more_data:
+        # build search request
+        request_payload = {"start_date": config.last_import, "page_size": 200, "page": page}
+        if config.severity == 'high':
+            request_payload['severity'] = {'from': 4}
+        elif config.severity == 'medium':
+            request_payload['severity'] = {'from': 3}
+
+        if config.confidence == 'high':
+            request_payload['confidence'] = {'from': 75}
+        elif config.confidence == 'medium':
+            request_payload['confidence'] = {'from': 50}
+
+        if config.types:
+            request_payload['type'] = {'values': config.types}
+
+        if config.debug:
+            print("Requesting:")
+            print(json.dumps(request_payload))
+
+        # Fetch next page of data
+        try:
+            r = requests.post(config.url, headers=config.headers, data=json.dumps(request_payload))
+        except requests.exceptions.ConnectionError as e:
+            sys.exit("Check your network connection\n%s" % str(e))
+        except requests.exceptions.HTTPError as e:
+            sys.exit("Bad HTTP response\n%s" % str(e))
+
+        if r.status_code == requests.codes.ok:
+            try:
+                # Read in response as json
+                response = r.json()
+            except (ValueError, KeyError):
+                sys.exit("Response couldn't be decoded")
+
+            more_data = response['more']
+            print("Page %d ==> %s (%s)" % (page, response['more'], response['total_size']))
+            page += 1
+
+            if 'results' not in response:
+                sys.exit("No results for request")
+            else:
+                results.extend(response['results'])
+
+        else:
+            res = r.json()
+            sys.stderr.write('%s @ %s\n' % (res['message'], res['timestamp']))
+            sys.exit("API request couldn't be fulfilled (%d)\n" % r.status_code)
+
+
 def outputstix2(results):
     indicators = []
     for result in results:
@@ -111,61 +166,14 @@ def main():
     args = parser.parse_args()
 
     config = Config(args)
+    if config.debug:
+        sys.write("Fetching indicators")
+    results = fetch_indicators(config)
 
-    # Set the datetime of the last import
-    page = 1
-    more_data = True
-    results = []
-    while more_data:
-        # build search request
-        request_payload = {"start_date": config.last_import, "page_size": 200, "page": page}
-        if config.severity == 'high':
-            request_payload['severity'] = {'from': 4}
-        elif config.severity == 'medium':
-            request_payload['severity'] = {'from': 3}
-
-        if config.confidence == 'high':
-            request_payload['confidence'] = {'from': 75}
-        elif config.confidence == 'medium':
-            request_payload['confidence'] = {'from': 50}
-
-        if config.types:
-            request_payload['type'] = {'values': config.types}
-
-        if config.debug:
-            print("Requesting:")
-            print(json.dumps(request_payload))
-
-        # Fetch next page of data
-        try:
-            r = requests.post(config.url, headers=config.headers, data=json.dumps(request_payload))
-        except requests.exceptions.ConnectionError as e:
-            sys.exit("Check your network connection\n%s" % str(e))
-        except requests.exceptions.HTTPError as e:
-            sys.exit("Bad HTTP response\n%s" % str(e))
-
-        if r.status_code == requests.codes.ok:
-            try:
-                # Read in response as json
-                response = r.json()
-            except (ValueError, KeyError):
-                sys.exit("Response couldn't be decoded")
-
-            more_data = response['more']
-            print("Page %d ==> %s (%s)" % (page, response['more'], response['total_size']))
-            page += 1
-
-            if 'results' not in response:
-                sys.exit("No results for request")
-            else:
-                results.extend(response['results'])
-
-        else:
-            res = r.json()
-            sys.stderr.write('%s @ %s\n' % (res['message'], res['timestamp']))
-            sys.exit("API request couldn't be fulfilled (%d)\n" % r.status_code)
-
+    if config.debug:
+        sys.write("Creating bundle")
     bundle = outputstix2(results)
+
     if args.output:
         with open(args.output, 'w') as f:
             json.dump(bundle, f)
