@@ -29,6 +29,13 @@ Most of these parameters can also be set in the `ti.cfg` file.
 
 Note that this script requires the use of the [requests](http://docs.python-requests.org/en/master/) library.
 
+## STIX 1.2.1 script
+This script is not updated with all the features from `ti-export.py` and is included here for legacy purposes only. STIX 2.x support is forthcoming and will be fully supported.
+
+## QRadar integration
+
+After downloading a JSON file, the script `ti-qradar.py` can be used to upload the indicators to an IBM QRadar instance. Please note that this *proof of concept* script is based on the [rfisi-threat-import](https://github.com/ibm-security-intelligence/data-import/tree/master/rfisi-threat-import) tool provided by IBM and is used here in accordance with the terms of the Apache 2 license. 
+
 ## Known issues
 
 Only one hash is produced for each network indicator, although more may be available.
