@@ -148,7 +148,7 @@ def main():
             try:
                 # Read in response as json
                 response = r.json()
-            except (ValueError, KeyError) as e:
+            except (ValueError, KeyError):
                 sys.exit("Response couldn't be decoded")
 
             more_data = response['more']
