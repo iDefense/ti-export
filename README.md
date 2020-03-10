@@ -31,7 +31,7 @@ Note that this script requires the use of the [requests](http://docs.python-requ
 
 ## QRadar integration
 
-After downloading a JSON file, the script `ti-qradar.py` can be used to upload the indicators to an IBM QRadar instance. Please note that this script is based on the [rfisi-threat-import](https://github.com/ibm-security-intelligence/data-import/tree/master/rfisi-threat-import) tool provided by IBM and is used here in accordance with the terms of the Apache 2 license.
+After downloading a JSON file, the script `ti-qradar.py` can be used to upload the indicators to an IBM QRadar instance. Please note that this *proof of concept* script is based on the [rfisi-threat-import](https://github.com/ibm-security-intelligence/data-import/tree/master/rfisi-threat-import) tool provided by IBM and is used here in accordance with the terms of the Apache 2 license. 
 
 ## Known issues
 
