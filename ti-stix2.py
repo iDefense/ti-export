@@ -68,7 +68,7 @@ class Config(object):
     def __init__(self, args, filename='ti.cfg'):
         super(Config, self).__init__()
 
-        self.configp = configparser.SafeConfigParser()
+        self.configp = configparser.ConfigParser()
         self.configp.read(filename)
 
         # Initial basics
