@@ -2,13 +2,13 @@
 
 import argparse
 import configparser
-import csv
 import datetime
 import json
 import os
 import sys
 
 import requests
+from stix2 import Bundle, Indicator
 
 
 def severity_map(sev_quant):
@@ -39,42 +39,27 @@ def confidence_map(con_quant):
         return ""
 
 
-def build_row(indicator):
-    # Parse out data from indicator
-
-    row = {}
-    row['format'] = 'STRING'
-    row['value'] = indicator['key']
-    row['type'] = indicator['type']
-
-    if 'last_seen' in indicator:
-        row['last-observed'] = indicator['last_seen']
-    else:
-        row['last-observed'] = ''
-
-    row['severity'] = severity_map(indicator.get('severity'))
-    row['confidence'] = confidence_map(indicator.get('confidence'))
-    # Classification of the indicator (Cyber Crime, Cyber Espionage, Hacktivism)
-    row['type'] = '+'.join(indicator.get('threat_types', []))  # TODO: compare with legacy method
-
-    # Classification of how the indicator is being used
-    # ('MALWARE_C2', 'MALWARE_DOWNLOAD', 'EXPLOIT')
-    row['role'] = '+'.join(indicator.get('last_seen_as', []))  # TODO: compare with legacy method
-
-    malware_fams = ''
-    if 'malware_family' in indicator:
-        malware_fams = "+".join(indicator.get('malware_family', []))  # TODO: compare with legacy method
-    row['comment'] = malware_fams
-
-    md5 = ''
-    if 'files' in indicator:
-        md5 = indicator['files'][0]['key']  # FIXME: how to provide other hashes?
-    row['sample-md5'] = md5
-    row['ref-id'] = ''
-    row['format'] = 'STRING'
-    row['uuid'] = indicator['uuid']
-
-    return row
+def outputstix2(results):
+    indicators = []
+    for result in results:
+        if result['type'] == 'url':
+            indicator = Indicator(valid_from=result['last_seen'],
+                                  labels=str(result['last_seen_as']),
+                                  description=str(result['threat_types']),
+                                  pattern="[url:value='%s']" % result['key'])
+        elif result['type'] == 'domain':
+            indicator = Indicator(valid_from=result['last_seen'],
+                                  labels=str(result['last_seen_as']),
+                                  description=str(result['threat_types']),
+                                  pattern="[domain-name:value = '%s']" % result['key'])
+        elif result['type'] == 'ip':
+            indicator = Indicator(valid_from=result['last_seen'],
+                                  labels=str(result['last_seen_as']),
+                                  description=str(result['threat_types']),
+                                  pattern="[domain-name:value = '%s']" % result['key'])
+        indicators.append(indicator)
+    bundle = Bundle(indicators)
+    return bundle
 
 
 class Config(object):
@@ -91,7 +76,6 @@ class Config(object):
         if not self.token:
             sys.exit('Must specify API token in config file or environment variable')
 
-        self.format = args.format or self.configp.get('ti', 'format')
         if args.output:
             self.out_f = args.output
         else:
@@ -112,7 +96,6 @@ class Config(object):
 
         # set up column headings
         self.fieldnames = ['type', 'format', 'value', 'role', 'sample-md5', 'last-observed', 'comment', 'ref-id', 'confidence', 'severity']
-
         self.headers = {"Content-Type": "application/json", "auth-token": self.token}
 
 
@@ -124,7 +107,6 @@ def main():
     parser.add_argument('-c', '--confidence', help='Minimum confidence', choices=['high', 'medium'])
     parser.add_argument('-C', '--config', help='Name of configuration file', default='ti.cfg')
     parser.add_argument('-t', '--types', help='Types of indicators to fetch', choices=['url', 'domain', 'ip'], nargs='*')
-    parser.add_argument('-f', '--format', help="Format of output", choices=['json', 'csv'])
     parser.add_argument('--debug', action="store_true", help='Print additional debug output')
     args = parser.parse_args()
 
@@ -133,7 +115,7 @@ def main():
     # Set the datetime of the last import
     page = 1
     more_data = True
-    feed = []
+    results = []
     while more_data:
         # build search request
         request_payload = {"start_date": config.last_import, "page_size": 200, "page": page}
@@ -175,27 +157,15 @@ def main():
 
             if 'results' not in response:
                 sys.exit("No results for request")
-
-            # Iterate the response
-            for indicator in response['results']:
-                if config.debug:
-                    print("Processing " + indicator['key'])
-
-                feed.append(build_row(indicator))
+            else:
+                results.extend(response['results'])
 
         else:
             res = r.json()
             sys.stderr.write('%s @ %s\n' % (res['message'], res['timestamp']))
             sys.exit("API request couldn't be fulfilled (%d)\n" % r.status_code)
 
-    if config.format == 'csv':
-        with open(config.out_f, 'w') as f:
-            csv_w = csv.DictWriter(f, fieldnames=config.fieldnames, extrasaction='ignore')
-            csv_w.writeheader()
-            csv_w.writerows(feed)
-    elif config.format == 'json':
-        with open(config.out_f, 'w') as f:
-            json.dump(feed, f, indent=2)
+    print(outputstix2(results))
 
 
 if __name__ == "__main__":
