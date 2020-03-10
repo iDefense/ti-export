@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
-import ConfigParser
+import configparser
 import csv
 import datetime
 import json
@@ -83,7 +83,7 @@ class Config(object):
     def __init__(self, args, filename='ti.cfg'):
         super(Config, self).__init__()
 
-        self.configp = ConfigParser.SafeConfigParser()
+        self.configp = configparser.SafeConfigParser()
         self.configp.read(filename)
 
         # Initial basics
@@ -92,7 +92,10 @@ class Config(object):
             sys.exit('Must specify API token in config file or environment variable')
 
         self.format = args.format or self.configp.get('ti', 'format')
-        self.out_f = args.output or self.configp.get('ti', 'filename')
+        if args.output:
+            self.out_f = args.output
+        else:
+            self.out_f = self.configp.get('ti', 'out')
         self.confidence = args.confidence or self.configp.get('ti', 'confidence')
         self.severity = args.severity or self.configp.get('ti', 'severity')
         self.url = self.configp.get('ti', 'url')
@@ -100,7 +103,10 @@ class Config(object):
         self.debug = args.debug
 
         # Calculate the start date for TI data retrieval
-        days = args.number or self.configp.get('ti', 'days')
+        if args.number is not None:
+            days = args.number
+        else:
+            days = self.configp.getint('ti', 'days')
         timestr = datetime.datetime.now() - datetime.timedelta(days=days)
         self.last_import = timestr.strftime("%Y-%m-%dT%H") + ":00:00.000Z"
 
@@ -112,8 +118,8 @@ class Config(object):
 
 def main():
     parser = argparse.ArgumentParser(description='Produce CSV output of iDefense TI feed')
-    parser.add_argument('-o', '--output', help='Name of output file', default='tidump.out')
-    parser.add_argument('-n', '--number', help='Number of days of data to fetch', type=int, default=7)
+    parser.add_argument('-o', '--output', help='Name of output file')
+    parser.add_argument('-n', '--number', help='Number of days of data to fetch', type=int)
     parser.add_argument('-s', '--severity', help='Minimum severity', choices=['high', 'medium'])
     parser.add_argument('-c', '--confidence', help='Minimum confidence', choices=['high', 'medium'])
     parser.add_argument('-C', '--config', help='Name of configuration file', default='ti.cfg')
@@ -145,8 +151,8 @@ def main():
             request_payload['type'] = {'values': config.types}
 
         if config.debug:
-            print "Requesting:"
-            print json.dumps(request_payload)
+            print("Requesting:")
+            print(json.dumps(request_payload))
 
         # Fetch next page of data
         try:
@@ -164,7 +170,7 @@ def main():
                 sys.exit("Response couldn't be decoded")
 
             more_data = response['more']
-            print "Page %d ==> %s (%s)" % (page, response['more'], response['total_size'])
+            print("Page %d ==> %s (%s)" % (page, response['more'], response['total_size']))
             page += 1
 
             if 'results' not in response:
@@ -173,7 +179,7 @@ def main():
             # Iterate the response
             for indicator in response['results']:
                 if config.debug:
-                    print "Processing " + indicator['key']
+                    print("Processing " + indicator['key'])
 
                 feed.append(build_row(indicator))
 
@@ -183,13 +189,14 @@ def main():
             sys.exit("API request couldn't be fulfilled (%d)\n" % r.status_code)
 
     if config.format == 'csv':
-        with open(config.out_f, 'wb') as f:
+        with open(config.out_f, 'w') as f:
             csv_w = csv.DictWriter(f, fieldnames=config.fieldnames, extrasaction='ignore')
             csv_w.writeheader()
             csv_w.writerows(feed)
     elif config.format == 'json':
-        with open(config.out_f, 'wb') as f:
+        with open(config.out_f, 'w') as f:
             json.dump(feed, f, indent=2)
+
 
 if __name__ == "__main__":
     main()
