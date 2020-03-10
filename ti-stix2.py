@@ -165,7 +165,12 @@ def main():
             sys.stderr.write('%s @ %s\n' % (res['message'], res['timestamp']))
             sys.exit("API request couldn't be fulfilled (%d)\n" % r.status_code)
 
-    print(outputstix2(results))
+    bundle = outputstix2(results)
+    if args.output:
+        with open(args.output, 'w') as f:
+            json.dump(bundle, f)
+    else:
+        print(bundle)
 
 
 if __name__ == "__main__":
