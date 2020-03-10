@@ -62,5 +62,6 @@ def main():
         for indicator in feed:
             addIndicator(indicator)
 
+
 if __name__ == '__main__':
     main()
