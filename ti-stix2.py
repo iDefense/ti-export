@@ -107,7 +107,7 @@ def fetch_results(config):
     return results
 
 
-def outputstix2(results):
+def outputstix2(results, config):
     indicators = []
     if results is None:
         return
@@ -191,7 +191,7 @@ def main():
 
     if config.debug:
         print("Creating bundle", file=sys.stderr)
-    bundle = outputstix2(results)
+    bundle = outputstix2(results, config)
 
     if args.output:
         with open(args.output, 'w') as f:
