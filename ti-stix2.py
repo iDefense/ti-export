@@ -114,20 +114,21 @@ def outputstix2(results, config):
     if config.debug:
         print("Creating STIX2 indicators", file=sys.stderr)
     for result in results:
+        description = '|'.join(result.get('threat_types', []) + result.get('last_seen_as', []) + result.get('malware_family', []))
         if result['type'] == 'url':
             indicator = Indicator(valid_from=result['last_seen'],
                                   labels="malicious-activity",
-                                  description=str(result['threat_types']),
+                                  description=description,
                                   pattern="[url:value='%s']" % result['key'])
         elif result['type'] == 'domain':
             indicator = Indicator(valid_from=result['last_seen'],
-                                  labels=str(result['last_seen_as']),
-                                  description=str(result['threat_types']),
+                                  labels="malicious-activity",
+                                  description=description,
                                   pattern="[domain-name:value = '%s']" % result['key'])
         elif result['type'] == 'ip':
             indicator = Indicator(valid_from=result['last_seen'],
-                                  labels=str(result['last_seen_as']),
-                                  description=str(result['threat_types']),
+                                  labels="malicious-activity",
+                                  description=description,
                                   pattern="[domain-name:value = '%s']" % result['key'])
         indicators.append(indicator)
     if config.debug:
