@@ -41,7 +41,7 @@ def confidence_map(con_quant):
 
 
 def fetch_indicators(request_payload, config):
-    try:  # should we refactor this to a new function to handle the exceptions in one place?
+    try:
         r = requests.post(config.url, headers=config.headers, data=json.dumps(request_payload))
     except requests.exceptions.ConnectionError as e:
         sys.exit("Check your network connection\n%s" % str(e))
@@ -116,7 +116,7 @@ def outputstix2(results, config):
     for result in results:
         if result['type'] == 'url':
             indicator = Indicator(valid_from=result['last_seen'],
-                                  labels=str(result['last_seen_as']),
+                                  labels="malicious-activity",
                                   description=str(result['threat_types']),
                                   pattern="[url:value='%s']" % result['key'])
         elif result['type'] == 'domain':
@@ -148,7 +148,7 @@ class Config(object):
         # Initial basics
         self.token = os.getenv('IDEF_TOKEN') or self.configp.get('ti', 'token')
         if not self.token:
-            print('Must specify API token in config file or environment variable', file=sys.stderr)
+            sys.exit('Must specify API token in config file or environment variable')
 
         if args.output:
             self.out_f = args.output
@@ -167,9 +167,6 @@ class Config(object):
             days = self.configp.getint('ti', 'days')
         timestr = datetime.datetime.now() - datetime.timedelta(days=days)
         self.last_import = timestr.strftime("%Y-%m-%dT%H") + ":00:00.000Z"
-
-        # set up column headings
-        self.fieldnames = ['type', 'format', 'value', 'role', 'sample-md5', 'last-observed', 'comment', 'ref-id', 'confidence', 'severity']
         self.headers = {"Content-Type": "application/json", "auth-token": self.token}
 
 
@@ -195,7 +192,7 @@ def main():
 
     if args.output:
         with open(args.output, 'w') as f:
-            json.dump(bundle, f)
+            f.write(str(bundle))
     else:
         print(bundle)
 
