@@ -9,6 +9,7 @@ import sys
 
 import requests
 from stix2 import Bundle, Indicator
+from tqdm import tqdm
 
 
 def severity_map(sev_quant):
@@ -39,63 +40,79 @@ def confidence_map(con_quant):
         return ""
 
 
-def fetch_indicators(config):
+def fetch_indicators(request_payload, config):
+    try:  # should we refactor this to a new function to handle the exceptions in one place?
+        r = requests.post(config.url, headers=config.headers, data=json.dumps(request_payload))
+    except requests.exceptions.ConnectionError as e:
+        sys.exit("Check your network connection\n%s" % str(e))
+    except requests.exceptions.HTTPError as e:
+        sys.exit("Bad HTTP response\n%s" % str(e))
+
+    if r.status_code == requests.codes.ok:
+        try:
+            # Read in response as json
+            response = r.json()
+        except (ValueError, KeyError):
+            sys.exit("Response couldn't be decoded")
+
+    return response
+
+
+def fetch_results(config):
     # Set the datetime of the last import
     page = 1
     more_data = True
     results = []
+
+    # initial search request
+    request_payload = {"start_date": config.last_import, "page": page}
+    if config.severity == 'high':
+        request_payload['severity'] = {'from': 4}
+    elif config.severity == 'medium':
+        request_payload['severity'] = {'from': 3}
+
+    if config.confidence == 'high':
+        request_payload['confidence'] = {'from': 75}
+    elif config.confidence == 'medium':
+        request_payload['confidence'] = {'from': 50}
+
+    if config.types:
+        request_payload['type'] = {'values': config.types}
+
+    if config.debug:
+        print("Requesting:", file=sys.stderr)
+        print(json.dumps(request_payload), file=sys.stderr)
+        # find out result count for progress bar
+        request_payload["page_size"] = 1
+        total_size = fetch_indicators(request_payload, config)['total_size']
+        t = tqdm(total=total_size)
+
+    request_payload['page_size'] = 200
+
     while more_data:
-        # build search request
-        request_payload = {"start_date": config.last_import, "page_size": 200, "page": page}
-        if config.severity == 'high':
-            request_payload['severity'] = {'from': 4}
-        elif config.severity == 'medium':
-            request_payload['severity'] = {'from': 3}
+        # Fetch next page of data
+        request_payload['page'] = page
+        response = fetch_indicators(request_payload, config)
+        more_data = response['more']
+        page += 1
 
-        if config.confidence == 'high':
-            request_payload['confidence'] = {'from': 75}
-        elif config.confidence == 'medium':
-            request_payload['confidence'] = {'from': 50}
-
-        if config.types:
-            request_payload['type'] = {'values': config.types}
+        if 'results' not in response:
+            sys.exit("No results for request")
+        else:
+            results.extend(response['results'])
 
         if config.debug:
-            print("Requesting:")
-            print(json.dumps(request_payload))
+            t.update(len(results))
 
-        # Fetch next page of data
-        try:
-            r = requests.post(config.url, headers=config.headers, data=json.dumps(request_payload))
-        except requests.exceptions.ConnectionError as e:
-            sys.exit("Check your network connection\n%s" % str(e))
-        except requests.exceptions.HTTPError as e:
-            sys.exit("Bad HTTP response\n%s" % str(e))
-
-        if r.status_code == requests.codes.ok:
-            try:
-                # Read in response as json
-                response = r.json()
-            except (ValueError, KeyError):
-                sys.exit("Response couldn't be decoded")
-
-            more_data = response['more']
-            print("Page %d ==> %s (%s)" % (page, response['more'], response['total_size']))
-            page += 1
-
-            if 'results' not in response:
-                sys.exit("No results for request")
-            else:
-                results.extend(response['results'])
-
-        else:
-            res = r.json()
-            sys.stderr.write('%s @ %s\n' % (res['message'], res['timestamp']))
-            sys.exit("API request couldn't be fulfilled (%d)\n" % r.status_code)
+    return results
 
 
 def outputstix2(results):
     indicators = []
+    if results is None:
+        return
+    if config.debug:
+        print("Creating STIX2 indicators", file=sys.stderr)
     for result in results:
         if result['type'] == 'url':
             indicator = Indicator(valid_from=result['last_seen'],
@@ -113,7 +130,9 @@ def outputstix2(results):
                                   description=str(result['threat_types']),
                                   pattern="[domain-name:value = '%s']" % result['key'])
         indicators.append(indicator)
-    bundle = Bundle(indicators)
+    if config.debug:
+        print("Creating STIX2 bundle", file=sys.stderr)
+    bundle = Bundle(indicators)  # This takes WAY too long, needs measurement
     return bundle
 
 
@@ -129,7 +148,7 @@ class Config(object):
         # Initial basics
         self.token = os.getenv('IDEF_TOKEN') or self.configp.get('ti', 'token')
         if not self.token:
-            sys.exit('Must specify API token in config file or environment variable')
+            print('Must specify API token in config file or environment variable', file=sys.stderr)
 
         if args.output:
             self.out_f = args.output
@@ -167,11 +186,11 @@ def main():
 
     config = Config(args)
     if config.debug:
-        sys.write("Fetching indicators")
-    results = fetch_indicators(config)
+        print("Fetching indicators", file=sys.stderr)
+    results = fetch_results(config)
 
     if config.debug:
-        sys.write("Creating bundle")
+        print("Creating bundle", file=sys.stderr)
     bundle = outputstix2(results)
 
     if args.output:
