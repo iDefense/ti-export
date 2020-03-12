@@ -12,34 +12,6 @@ from stix2 import Bundle, Indicator
 from tqdm import tqdm
 
 
-def severity_map(sev_quant):
-    if sev_quant == 1:
-        return "MINIMAL"
-    elif sev_quant == 2:
-        return "LOW"
-    elif sev_quant == 3:
-        return "MED"
-    elif sev_quant == 4:
-        return "HIGH"
-    elif sev_quant == 5:
-        return "EXTREME"
-    else:
-        return ""
-
-
-def confidence_map(con_quant):
-    if con_quant >= 75:
-        return "HIGH"
-    elif con_quant >= 50:
-        return "MED"
-    elif con_quant >= 25:
-        return "LOW"
-    elif con_quant >= 0:
-        return "NONE"
-    else:
-        return ""
-
-
 def fetch_indicators(request_payload, config):
     try:
         r = requests.post(config.url, headers=config.headers, data=json.dumps(request_payload))
@@ -114,6 +86,7 @@ def outputstix2(results, config):
     if config.debug:
         print("Creating STIX2 indicators", file=sys.stderr)
     for result in results:
+        # Indicator setup based on https://oasis-open.github.io/cti-documentation/examples/indicator-for-malicious-url
         description = '|'.join(result.get('threat_types', []) + result.get('last_seen_as', []) + result.get('malware_family', []))
         if result['type'] == 'url':
             indicator = Indicator(valid_from=result['last_seen'],
