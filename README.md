@@ -29,17 +29,16 @@ Most of these parameters can also be set in the `ti.cfg` file.
 
 Note that this script requires the use of the [requests](http://docs.python-requests.org/en/master/) library.
 
+## STIX 2.x script
+This script uses most of the same options as the core `ti-export.py` tool. It requires the use of the [cti-python-stix2](https://github.com/oasis-open/cti-python-stix2) library (`pip install stix2`) and tqdm (`pip install tqdm`)
+
 ## STIX 1.2.1 script
 This script is not updated with all the features from `ti-export.py` and is included here for legacy purposes only. STIX 2.x support is forthcoming and will be fully supported.
 
 ## QRadar integration
 
-After downloading a JSON file, the script `ti-qradar.py` can be used to upload the indicators to an IBM QRadar instance. Please note that this *proof of concept* script is based on the [rfisi-threat-import](https://github.com/ibm-security-intelligence/data-import/tree/master/rfisi-threat-import) tool provided by IBM and is used here in accordance with the terms of the Apache 2 license. 
+After downloading a JSON file, the script `ti-qradar.py` can be used to upload the indicators to an IBM QRadar instance. Please note that this *proof of concept* script is based on the [rfisi-threat-import](https://github.com/ibm-security-intelligence/data-import/tree/master/rfisi-threat-import) tool provided by IBM and is used here in accordance with the terms of the Apache 2 license.
 
 ## Known issues
 
-Only one hash is produced for each network indicator, although more may be available.
-
-Only MD5 hashes are available via the Threat Indicator, although SHA1 and SHA256 hashes may be available via the Fundamental API.
-
-Please report any issues via [our GitHub page](https://github.com/iDefense/ti-export).
+See known issues at [our GitHub page](https://github.com/iDefense/ti-export).
