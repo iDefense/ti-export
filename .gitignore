@@ -42,9 +42,14 @@ htmlcov/
 # PyCharm IDE directory
 .idea
 
+# VSCode IDE directory
+.vscode
+
 # virtualenv
 venv
 
 # data files
 *.xml
 *.json
+*.csv
+*.rc
