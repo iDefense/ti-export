@@ -63,9 +63,6 @@ def main():
     timestr = datetime.datetime.utcnow() - datetime.timedelta(days=1)
     LAST_IMPORT = timestr.strftime("%Y-%m-%dT%H:%M:%S") + ".000Z"
 
-    # TODO: use context manager
-    file = open('stix-1.2.1.xml', 'w')
-
     HEADERS = {
         "Content-Type": "application/json",
         "auth-token": API_KEY,
@@ -184,11 +181,6 @@ def main():
                 print("API request couldn't be fulfilled due status code: %d" % r.status_code)
                 more_data = False
 
-        # Output to XML
-        # print stix_package.to_xml()
-        file.write(stix_package.to_xml())
-        file.close()
-
     except requests.exceptions.ConnectionError as e:
         print("Check your network connection\n %s" % str(e))
 
@@ -197,6 +189,10 @@ def main():
 
     except Exception as e:
         print("Uncaught exception\n %s" % str(e))
+
+    # Output to XML
+    with open('stix-1.2.1.xml', 'wb') as f:
+        f.write(stix_package.to_xml())
 
 
 if __name__ == '__main__':
