@@ -1,43 +1,43 @@
 # ti-export
 
-This README documents the usage of the `ti-export.py` script for accessing the iDefense IntelGraph Threat Indicator API. The script processes the rich JSON data returned by the API and optionally renders it in a CSV format that should be compatible with our legacy IP feed.
+This README documents the usage of the `ti-export.py` module for accessing the iDefense IntelGraph Threat Indicator API. The script processes the rich JSON data returned by the API and renders it in a number of formats useful in different environments.
 
 ## Usage
 
-The script requires an API authentication token as documented at the [IntelGraph documentation site](https://intelgraph.idefense.com/#/docs/view#page-section-2-0) (the "API code"). For security reasons, the script looks for your IG API token in the environment variable `IDEF_TOKEN` rather than specifying directly on the command line. Alternately, the file `ti.cfg` has a variable for the token.
+The script requires an API authentication token as documented at the [IntelGraph documentation site](https://intelgraph.idefense.com/#/docs/view#page-section-2-0) (the "API code"). For security reasons, the script looks for your IG API token in the environment variable `IDEF_TOKEN` rather than specifying directly on the command line. Alternately, you can specify the token in the `ti.cfg` configuration file using the variable `token`.
 
 The syntax is as follows:
 
 ```
-usage: ti-export.py [-h] [-o OUTPUT] [-n NUMBER] [-s {high,medium}]
+usage: ti-export.py [-h] [-o OUTPUT] [--hours NUMBER] [-s {high,medium}]
                     [-c {high,medium}]
                     [-t [{url,domain,ip,file} [{url,domain,ip,file} ...]]]
                     [-v {1,2}] [--debug]
 ```
 
 - `-h`: Help message
-- `-o`: Specify output file. Default is `ti.csv` if none specified.
-- `-n`: Specify number of days of data. Default is 7 days if none specified.
-- `-s`: Specify severity minimum for indicators. Choices are `medium` or `high`. Choosing either of these will filter all indicators for which no severity is listed.
-- `-c`: Specify confidence minimum for indicators. Choices are `medium` or `high`. Choosing either of these will filter all indicators for which no confidence is listed.
-- `-t`: Specify types of (primary) indicators to fetch. Choices are `url`, `domain`, or `ip`. Multiple choices can be specified, separated by a space (e.g. `-t url domain`). Note that this choice is unrelated to the MD5 hash of related files included with the primary indicator.
-- `-v`: Specify version of legacy TI feed. Version 2 (the default) includes `confidence` and `severity` fields. The versions are otherwise identical.
-- `-f`: Specify format for output. Choices are `json` or `csv` (the latter is primarily used by legacy clients).
+- `-o`: Output file. Default is stdout if none specified.
+- `-s`: Severity minimum for indicators. Choices are `medium` or `high`. Choosing either of these will filter all indicators for which no severity is listed. Default is medium.
+- `-c`: Confidence minimum for indicators. Choices are `medium` or `high`. Choosing either of these will filter all indicators for which no confidence is listed. Note that `high` will only retrieve indicators manually entered by analysts. Default is medium.
+- `-t`: Types of (primary) indicators to fetch. Choices are `url`, `domain`, or `ip`. Multiple choices can be specified, separated by a space (e.g. `-t url domain`). Default is all types.
+- `-f`: Format for output. Choices are `json` (raw output from the API), `csv` for legacy clients, `stix1` (STIX v1.2.1 XML), or `stix2` (STIX v2.x JSON)
+- `--hours`: Hours of data to fetch. If not specified, then the default will be 24 hours.
+- `--quiet`: Quiet mode to minimize non-error output. Appropriate for use in scheduled tasks like cron jobs.
 - `--debug`: Produce additional output for debugging. This is normally not needed unless working with iDefense support.
 
 Most of these parameters can also be set in the `ti.cfg` file.
 
-Note that this script requires the use of the [requests](http://docs.python-requests.org/en/master/) library.
+## Requirements
 
-## STIX 2.x script
-This script uses most of the same options as the core `ti-export.py` tool. It requires the use of the [cti-python-stix2](https://github.com/oasis-open/cti-python-stix2) library (`pip install stix2`) and tqdm (`pip install tqdm`)
+At its core, this is a Python 3 application and thus requires Python 3.X or higher.
 
-## STIX 1.2.1 script
-This script is not updated with all the features from `ti-export.py` and is included here for legacy purposes only. STIX 2.x support is forthcoming and will be fully supported.
+This module requires `requests` in all cases.
 
-## QRadar integration
+Optional dependencies include the `stix` library (for STIX v1.2.1 support) or `stix2` library (for STIX v2.x support). These can be installed using `setup.py` (see the Installation section).
 
-After downloading a JSON file, the script `ti-qradar.py` can be used to upload the indicators to an IBM QRadar instance. Please note that this *proof of concept* script is based on the [rfisi-threat-import](https://github.com/ibm-security-intelligence/data-import/tree/master/rfisi-threat-import) tool provided by IBM and is used here in accordance with the terms of the Apache 2 license.
+## Installation
+
+Run `python3 setup.py install`.
 
 ## Known issues
 
