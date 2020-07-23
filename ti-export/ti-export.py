@@ -83,7 +83,7 @@ class Config(object):
     def __init__(self, args, filename='ti.cfg'):
         super(Config, self).__init__()
 
-        self.configp = configparser.SafeConfigParser()
+        self.configp = configparser.ConfigParser()
         self.configp.read(filename)
 
         # Initial basics
@@ -98,20 +98,24 @@ class Config(object):
             self.out_f = self.configp.get('ti', 'out')
         self.confidence = args.confidence or self.configp.get('ti', 'confidence')
         self.severity = args.severity or self.configp.get('ti', 'severity')
-        self.url = self.configp.get('ti', 'url')
+        self.ti_url = self.configp.get('ti', 'ti_url')
         self.types = args.types
         self.debug = args.debug
 
-        # Calculate the start date for TI data retrieval
-        if args.number is not None:
-            days = args.number
+        # replication and hours are mutually exclusive, but this is handled by argparse
+        if args.replication is not None:
+            self.rep_id = args.replication
+
+        # Calculate the start timestamp for TI data retrieval
+        if args.hours is not None:
+            hours = args.hours
         else:
-            days = self.configp.getint('ti', 'days')
-        timestr = datetime.datetime.now() - datetime.timedelta(days=days)
+            hours = self.configp.getint('ti', 'hours')
+        timestr = datetime.datetime.now() - datetime.timedelta(hours=hours)
         self.last_import = timestr.strftime("%Y-%m-%dT%H") + ":00:00.000Z"
 
-        # set up column headings
-        self.fieldnames = ['type', 'format', 'value', 'role', 'sample-md5', 'last-observed', 'comment', 'ref-id', 'confidence', 'severity']
+        # set up legacy CSV column headings
+        self.csv_fieldnames = ['type', 'format', 'value', 'role', 'sample-md5', 'last-observed', 'comment', 'ref-id', 'confidence', 'severity']
 
         self.headers = {"Content-Type": "application/json", "auth-token": self.token}
 
@@ -119,13 +123,16 @@ class Config(object):
 def main():
     parser = argparse.ArgumentParser(description='Produce CSV output of iDefense TI feed')
     parser.add_argument('-o', '--output', help='Name of output file')
-    parser.add_argument('-n', '--number', help='Number of days of data to fetch', type=int)
     parser.add_argument('-s', '--severity', help='Minimum severity', choices=['high', 'medium'])
     parser.add_argument('-c', '--confidence', help='Minimum confidence', choices=['high', 'medium'])
     parser.add_argument('-C', '--config', help='Name of configuration file', default='ti.cfg')
     parser.add_argument('-t', '--types', help='Types of indicators to fetch', choices=['url', 'domain', 'ip'], nargs='*')
-    parser.add_argument('-f', '--format', help="Format of output", choices=['json', 'csv'])
+    parser.add_argument('-f', '--format', help="Format of output", choices=['json', 'csv', 'stix1', 'stix2'])
     parser.add_argument('--debug', action="store_true", help='Print additional debug output')
+    start_group = parser.add_mutually_exclusive_group()
+    start_group.add_argument('--hours', help='Hours of data to fetch', type=int)
+    start_group.add_argument('--replication', help='Replication ID to start from', type=int)
+
     args = parser.parse_args()
 
     config = Config(args)
@@ -166,7 +173,7 @@ def main():
             try:
                 # Read in response as json
                 response = r.json()
-            except (ValueError, KeyError) as e:
+            except (ValueError, KeyError):
                 sys.exit("Response couldn't be decoded")
 
             more_data = response['more']
