@@ -92,7 +92,7 @@ def outputstix2(results, config):
             indicator = Indicator(valid_from=result['last_seen'],
                                   labels="malicious-activity",
                                   description=description,
-                                  pattern="[url:value='%s']" % result["key"],
+                                  pattern="[url:value = '%s']" % result["key"],
                                   pattern_type="stix")
         elif result['type'] == 'domain':
             indicator = Indicator(valid_from=result['last_seen'],
