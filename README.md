@@ -40,4 +40,4 @@ Run `python3 setup.py install`.
 
 ## Known issues
 
-See known issues at [our GitHub page](https://github.com/iDefense/ti-export).
+See known issues at [our GitHub page](https://github.com/iDefense/ti-export/issues).
