@@ -53,3 +53,5 @@ venv
 *.json
 *.csv
 *.rc
+
+.DS_Store
