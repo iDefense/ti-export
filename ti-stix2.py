@@ -8,7 +8,7 @@ import os
 import sys
 
 import requests
-from stix2 import Bundle, Indicator
+from stix2 import Bundle, Indicator, ObjectPath, EqualityComparisonExpression
 from tqdm import tqdm
 
 
@@ -51,13 +51,12 @@ def fetch_results(config):
     if config.types:
         request_payload['type'] = {'values': config.types}
 
-    if config.debug:
-        print("Requesting:", file=sys.stderr)
-        print(json.dumps(request_payload), file=sys.stderr)
-        # find out result count for progress bar
-        request_payload["page_size"] = 1
-        total_size = fetch_indicators(request_payload, config)['total_size']
-        t = tqdm(total=total_size)
+    print("Requesting:", file=sys.stderr)
+    print(json.dumps(request_payload), file=sys.stderr)
+    # find out result count for progress bar
+    request_payload["page_size"] = 1
+    total_size = fetch_indicators(request_payload, config)['total_size']
+    t = tqdm(total=total_size)
 
     request_payload['page_size'] = 200
 
@@ -73,8 +72,7 @@ def fetch_results(config):
         else:
             results.extend(response['results'])
 
-        if config.debug:
-            t.update(len(results))
+        t.update(len(results))
 
     return results
 
@@ -83,32 +81,29 @@ def outputstix2(results, config):
     indicators = []
     if results is None:
         return
-    if config.debug:
-        print("Creating STIX2 indicators", file=sys.stderr)
+    
+    print("Creating STIX2 indicators", file=sys.stderr)
     for result in results:
         # Indicator setup based on https://oasis-open.github.io/cti-documentation/examples/indicator-for-malicious-url
         description = '|'.join(result.get('threat_types', []) + result.get('last_seen_as', []) + result.get('malware_family', []))
         if result['type'] == 'url':
-            indicator = Indicator(valid_from=result.get('last_seen', result['last_published']),
-                                  labels="malicious-activity",
-                                  description=description,
-                                  pattern="[url:value = '%s']" % result["key"],
-                                  pattern_type="stix")
+            #see issue 22 for explanation on why we are using a convoluted method to define a pattern
+            pattern = f"[{str(EqualityComparisonExpression(ObjectPath('url',['value']),result['key']))}]"
+
         elif result['type'] == 'domain':
-            indicator = Indicator(valid_from=result.get('last_seen', result['last_published']),
-                                  labels="malicious-activity",
-                                  description=description,
-                                  pattern="[domain-name:value = '%s']" % result["key"],
-                                  pattern_type="stix")
+            pattern = f"[{str(EqualityComparisonExpression(ObjectPath('domain-name',['value']),result['key']))}]"
+
         elif result['type'] == 'ip':
-            indicator = Indicator(valid_from=result.get('last_seen', result['last_published']),
-                                  labels="malicious-activity",
-                                  description=description,
-                                  pattern="[ipv4-addr:value = '%s']" % result["key"],
-                                  pattern_type="stix")
+            pattern = f"[{str(EqualityComparisonExpression(ObjectPath('ipv4-addr',['value']),result['key']))}]"
+            
+        indicator = Indicator(valid_from=result.get('last_seen', result['last_published']),
+                        labels="malicious-activity",
+                        description=description,
+                        pattern=pattern,
+                        pattern_type="stix")
         indicators.append(indicator)
-    if config.debug:
-        print("Creating STIX2 bundle", file=sys.stderr)
+    
+    print("Creating STIX2 bundle", file=sys.stderr)
     bundle = Bundle(indicators)  # This takes WAY too long, needs measurement
     return bundle
 
@@ -159,12 +154,10 @@ def main():
     args = parser.parse_args()
 
     config = Config(args)
-    if config.debug:
-        print("Fetching indicators", file=sys.stderr)
+    print("Fetching indicators", file=sys.stderr)
     results = fetch_results(config)
 
-    if config.debug:
-        print("Creating bundle", file=sys.stderr)
+    print("Creating bundle", file=sys.stderr)
     bundle = outputstix2(results, config)
 
     if args.output:
