@@ -11,6 +11,9 @@ import requests
 from stix2 import Bundle, Indicator, ObjectPath, EqualityComparisonExpression
 from tqdm import tqdm
 
+import stix2
+
+string = stix2.StringConstant
 
 def fetch_indicators(request_payload, config):
     try:
@@ -26,6 +29,9 @@ def fetch_indicators(request_payload, config):
             response = r.json()
         except (ValueError, KeyError):
             sys.exit("Response couldn't be decoded")
+
+    if r.status_code == requests.codes.unauthorized:
+        sys.exit("Server returned unauthorized access error")
 
     return response
 
